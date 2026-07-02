@@ -14,7 +14,7 @@ SPAR_BOTTOM     = 6.0    # mm (spar starts at y=6)
 # Strip dimensions
 TYPE_A_WIDTH    = 2.0    # mm (no vertical stiffener)
 TYPE_B_WIDTH    = 5.0    # mm (with vertical stiffener)
-STIFF_WIDTH     = 1.0    # mm (vertical stiffener width)
+STIFF_WIDTH     = 2.0    # mm (vertical stiffener width)
 MEM_SIDE_WIDTH  = (TYPE_B_WIDTH - STIFF_WIDTH) / 2.0   # = 2mm each side
 
 # Total wingspan

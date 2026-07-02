@@ -8,17 +8,17 @@ from scipy.interpolate import make_interp_spline
 # Wing geometry
 CHORD           = 7.0    # mm (y: 0 to 7)
 MEM_HEIGHT      = 6.0    # mm (y: 0 to 6)
-SPAR_HEIGHT     = 1.0    # mm (y: 6 to 7)
+SPAR_HEIGHT     = 2.0    # mm (y: 6 to 7)
 SPAR_BOTTOM     = 6.0    # mm
 
 # Strip dimensions
 TYPE_A_WIDTH    = 2.0    # mm
 TYPE_B_WIDTH    = 5.0    # mm
-STIFF_WIDTH     = 1.0    # mm (perpendicular width)
+STIFF_WIDTH     = 2.0    # mm (perpendicular width)
 
 # Inclined stiffener geometry
-ROOT_2          = np.sqrt(2)
-STIFF_X_BOTTOM  = TYPE_B_WIDTH - ROOT_2      # = 5 - √2 ≈ 3.5858 mm
+ROOT_2          = STIFF_WIDTH*np.sqrt(2)
+STIFF_X_BOTTOM  = TYPE_B_WIDTH - ROOT_2    
 
 # Total wingspan
 NUM_PAIRS       = 5
