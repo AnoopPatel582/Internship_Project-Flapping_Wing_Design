@@ -8,7 +8,7 @@ from scipy.interpolate import make_interp_spline
 # Wing geometry
 CHORD           = 7.0    # mm (y: 0 to 7)
 MEM_HEIGHT      = 6.0    # mm (y: 0 to 6)
-SPAR_HEIGHT     = 1.0    # mm (y: 6 to 7)
+SPAR_HEIGHT     = 2.0    # mm (y: 6 to 7)
 SPAR_BOTTOM     = 6.0    # mm (spar starts at y=6)
 
 # Strip dimensions
