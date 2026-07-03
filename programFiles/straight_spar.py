@@ -8,13 +8,13 @@ from scipy.interpolate import make_interp_spline
 # Wing geometry
 CHORD           = 7.0    # mm (y: 0 to 7)
 MEM_HEIGHT      = 6.0    # mm (y: 0 to 6)
-SPAR_HEIGHT     = 2.0    # mm (y: 6 to 7)
+SPAR_HEIGHT     = 1.0    # mm (y: 6 to 7)
 SPAR_BOTTOM     = 6.0    # mm (spar starts at y=6)
 
 # Strip dimensions
 TYPE_A_WIDTH    = 2.0    # mm (no vertical stiffener)
 TYPE_B_WIDTH    = 5.0    # mm (with vertical stiffener)
-STIFF_WIDTH     = 2.0    # mm (vertical stiffener width)
+STIFF_WIDTH     = 1.0    # mm (vertical stiffener width)
 MEM_SIDE_WIDTH  = (TYPE_B_WIDTH - STIFF_WIDTH) / 2.0   # = 2mm each side
 
 # Total wingspan
@@ -32,8 +32,8 @@ MEM_DENSITY     = 1.3    # mg/mm³ (Polyimide)
 STIFF_DENSITY   = 1.6    # mg/mm³ (Carbon Fibre)
 
 # Young's Modulus (GPa)
-E_CARBON        = 80.0   # GPa (Carbon Fibre - spar and stiffener)
-E_MEMBRANE      = 5.0    # GPa (Polyimide membrane)
+E_CARBON        = 2.40   # GPa (Carbon Fibre - spar and stiffener)
+E_MEMBRANE      = 1.1    # GPa (Polyimide membrane)
 
 # STRIP CALCULATIONS
 

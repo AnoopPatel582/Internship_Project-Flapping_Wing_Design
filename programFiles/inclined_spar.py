@@ -1,3 +1,4 @@
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
@@ -8,21 +9,24 @@ from scipy.interpolate import make_interp_spline
 # Wing geometry
 CHORD           = 7.0    # mm (y: 0 to 7)
 MEM_HEIGHT      = 6.0    # mm (y: 0 to 6)
-SPAR_HEIGHT     = 2.0    # mm (y: 6 to 7)
+SPAR_HEIGHT     = 1.0    # mm (y: 6 to 7)
 SPAR_BOTTOM     = 6.0    # mm
+
+# Stiffener angle
+THETA           = np.radians(50.0)   # 50 degrees in radians
 
 # Strip dimensions
 TYPE_A_WIDTH    = 2.0    # mm
-TYPE_B_WIDTH    = 5.0    # mm
 STIFF_WIDTH     = 2.0    # mm (perpendicular width)
 
-# Inclined stiffener geometry
-ROOT_2          = STIFF_WIDTH*np.sqrt(2)
-STIFF_X_BOTTOM  = TYPE_B_WIDTH - ROOT_2    
+# Derived geometry
+STIFF_X_BOTTOM  = MEM_HEIGHT / np.tan(THETA)              # = 5.035 mm
+STIFF_TOP_X     = STIFF_WIDTH / np.sin(THETA)             # = 1.3054 mm
+TYPE_B_WIDTH    = STIFF_X_BOTTOM + STIFF_TOP_X            # = 6.3054 mm
 
 # Total wingspan
 NUM_PAIRS       = 5
-WINGSPAN        = NUM_PAIRS * (TYPE_A_WIDTH + TYPE_B_WIDTH)   # = 35mm
+WINGSPAN        = NUM_PAIRS * (TYPE_A_WIDTH + TYPE_B_WIDTH)
 
 # Material thicknesses (z-direction)
 SPAR_THICKNESS  = 0.5    # mm
@@ -41,20 +45,20 @@ E_MEMBRANE      = 5.0    # GPa
 h = MEM_HEIGHT   # = 6
 
 # Left triangle integrals
-left_int_wy  = STIFF_X_BOTTOM * h / 2.0          # = 3.5858 × 3 = 10.7574
-left_int_wyy = STIFF_X_BOTTOM * h**2 / 6.0       # = 3.5858 × 6 = 21.5148
+left_int_wy  = STIFF_X_BOTTOM * h / 2.0
+left_int_wyy = STIFF_X_BOTTOM * h**2 / 6.0
 
 # Right triangle integrals
-right_int_wy  = STIFF_X_BOTTOM * h / 2.0         # = 10.7574
-right_int_wyy = STIFF_X_BOTTOM * h**2 / 3.0      # = 3.5858 × 12 = 43.0296
+right_int_wy  = STIFF_X_BOTTOM * h / 2.0
+right_int_wyy = STIFF_X_BOTTOM * h**2 / 3.0
 
-# EA contributions from triangles (E × thickness × integral)
-left_EA      = E_MEMBRANE * MEM_THICKNESS * left_int_wy     # = 5 × 0.05 × 10.7574
+# EA contributions from triangles
+left_EA      = E_MEMBRANE * MEM_THICKNESS * left_int_wy
 left_EAy     = E_MEMBRANE * MEM_THICKNESS * left_int_wyy
 right_EA     = E_MEMBRANE * MEM_THICKNESS * right_int_wy
 right_EAy    = E_MEMBRANE * MEM_THICKNESS * right_int_wyy
 
-# STRIP CALCULATIONS
+# STRIP CG CALCULATIONS
 
 strip_cg_x   = []
 strip_cg_y   = []
@@ -76,14 +80,14 @@ for i in range(NUM_PAIRS):
     # Component 1: Leading edge spar
     spar_mass  = TYPE_A_WIDTH * SPAR_HEIGHT * SPAR_THICKNESS * SPAR_DENSITY
     spar_cg_x  = x_start + TYPE_A_WIDTH / 2.0
-    spar_cg_y  = SPAR_BOTTOM + SPAR_HEIGHT / 2.0    # = 6.5 mm
+    spar_cg_y  = SPAR_BOTTOM + SPAR_HEIGHT / 2.0
     spar_A     = TYPE_A_WIDTH * SPAR_THICKNESS
     spar_EA    = E_CARBON * spar_A
 
     # Component 2: Membrane (rectangle)
     mem_mass   = TYPE_A_WIDTH * MEM_HEIGHT * MEM_THICKNESS * MEM_DENSITY
     mem_cg_x   = x_start + TYPE_A_WIDTH / 2.0
-    mem_cg_y   = MEM_HEIGHT / 2.0                   # = 3.0 mm
+    mem_cg_y   = MEM_HEIGHT / 2.0
     mem_A      = TYPE_A_WIDTH * MEM_THICKNESS
     mem_EA     = E_MEMBRANE * mem_A
 
@@ -106,26 +110,31 @@ for i in range(NUM_PAIRS):
 
     x_current = x_end
 
-    # ── TYPE B STRIP (5mm, with inclined stiffener) ──
+    # ── TYPE B STRIP (with inclined stiffener) ──
     x_start = x_current
     x_end   = x_start + TYPE_B_WIDTH
 
-    # Component 1: Left Triangle (membrane) — CG calculation
+    # Component 1: Left Triangle (membrane)
+    # Vertices: (0,0), (0,6), (STIFF_X_BOTTOM, 0)
     left_tri_area  = 0.5 * STIFF_X_BOTTOM * MEM_HEIGHT
     left_tri_mass  = left_tri_area * MEM_THICKNESS * MEM_DENSITY
     left_tri_cg_x  = x_start + STIFF_X_BOTTOM / 3.0
     left_tri_cg_y  = MEM_HEIGHT / 3.0               # = 2.0 mm
 
-    # Component 2: Right Triangle (membrane) — CG calculation
-    right_tri_mass = left_tri_mass
-    right_tri_cg_x = x_start + ROOT_2 + (TYPE_B_WIDTH - ROOT_2) * 2.0 / 3.0
+    # Component 2: Right Triangle (membrane)
+    # Vertices: (STIFF_TOP_X, 6), (TYPE_B_WIDTH, 6), (TYPE_B_WIDTH, 0)
+    right_tri_mass = left_tri_mass                   # same area as left triangle
+    right_tri_cg_x = (x_start + STIFF_TOP_X +
+                      x_start + TYPE_B_WIDTH +
+                      x_start + TYPE_B_WIDTH) / 3.0
     right_tri_cg_y = (MEM_HEIGHT + MEM_HEIGHT + 0.0) / 3.0   # = 4.0 mm
 
     # Component 3: Inclined Stiffener (parallelogram)
+    # Vertices: (0,6), (STIFF_TOP_X,6), (TYPE_B_WIDTH,0), (STIFF_X_BOTTOM,0)
     stiff_length   = np.sqrt(MEM_HEIGHT**2 + STIFF_X_BOTTOM**2)
     stiff_area     = stiff_length * STIFF_WIDTH
     stiff_mass     = stiff_area * STIFF_THICKNESS * STIFF_DENSITY
-    stiff_cg_x     = x_start + TYPE_B_WIDTH / 2.0
+    stiff_cg_x     = x_start + (0 + STIFF_TOP_X + TYPE_B_WIDTH + STIFF_X_BOTTOM) / 4.0
     stiff_cg_y     = MEM_HEIGHT / 2.0               # = 3.0 mm
     stiff_A        = STIFF_WIDTH * STIFF_THICKNESS
     stiff_EA       = E_CARBON * stiff_A
@@ -133,7 +142,7 @@ for i in range(NUM_PAIRS):
     # Component 4: Leading edge spar
     spar_mass      = TYPE_B_WIDTH * SPAR_HEIGHT * SPAR_THICKNESS * SPAR_DENSITY
     spar_cg_x      = x_start + TYPE_B_WIDTH / 2.0
-    spar_cg_y      = SPAR_BOTTOM + SPAR_HEIGHT / 2.0   # = 6.5 mm
+    spar_cg_y      = SPAR_BOTTOM + SPAR_HEIGHT / 2.0
     spar_A         = TYPE_B_WIDTH * SPAR_THICKNESS
     spar_EA        = E_CARBON * spar_A
 
@@ -148,8 +157,8 @@ for i in range(NUM_PAIRS):
              stiff_mass     * stiff_cg_y     +
              spar_mass      * spar_cg_y) / total_mass
 
-    # ── Combined NA (using exact integration for triangles) ──
-    total_EA_b = left_EA + right_EA + stiff_EA + spar_EA
+    # ── Combined NA ──
+    total_EA_b  = left_EA + right_EA + stiff_EA + spar_EA
     total_EAy_b = (left_EAy + right_EAy +
                    stiff_EA * stiff_cg_y +
                    spar_EA  * spar_cg_y)
@@ -214,19 +223,21 @@ for i in range(NUM_PAIRS):
                           facecolor='#2a9d8f', alpha=0.4))
 
     # Inclined stiffener (parallelogram)
-    ax.add_patch(Polygon([(xs, MEM_HEIGHT), (xs + ROOT_2, MEM_HEIGHT),
-                           (xs + TYPE_B_WIDTH, 0), (xs + STIFF_X_BOTTOM, 0)],
+    ax.add_patch(Polygon([(xs, MEM_HEIGHT),
+                           (xs + STIFF_TOP_X, MEM_HEIGHT),
+                           (xs + TYPE_B_WIDTH, 0),
+                           (xs + STIFF_X_BOTTOM, 0)],
                           closed=True, linewidth=0.5, edgecolor='white',
                           facecolor='#e9c46a', alpha=0.7))
 
     # Right triangle (membrane)
-    ax.add_patch(Polygon([(xs + ROOT_2, MEM_HEIGHT),
+    ax.add_patch(Polygon([(xs + STIFF_TOP_X, MEM_HEIGHT),
                            (xs + TYPE_B_WIDTH, MEM_HEIGHT),
                            (xs + TYPE_B_WIDTH, 0)],
                           closed=True, linewidth=0.5, edgecolor='white',
                           facecolor='#2a9d8f', alpha=0.4))
 
-    # Leading edge spar (full 5mm)
+    # Leading edge spar (full TYPE_B_WIDTH)
     ax.add_patch(patches.Rectangle((xs, SPAR_BOTTOM), TYPE_B_WIDTH, SPAR_HEIGHT,
                                     linewidth=0.5, edgecolor='white',
                                     facecolor='#e9c46a', alpha=0.7))
@@ -244,7 +255,7 @@ for idx, (cx, cy, stype) in enumerate(zip(strip_cg_x, strip_cg_y, strip_types)):
 # ── CG smooth curve ──
 x_cg_smooth, y_cg_smooth = smooth_spline(strip_cg_x, strip_cg_y)
 ax.plot(x_cg_smooth, y_cg_smooth, color='#e76f51', linewidth=2.0,
-        linestyle='--', alpha=0.9, label='CG Line')
+        linestyle='--', alpha=0.9)
 
 # ── Plot NA points ──
 for idx, (cx, ny, stype) in enumerate(zip(strip_cg_x, strip_na_y, strip_types)):
@@ -255,7 +266,7 @@ for idx, (cx, ny, stype) in enumerate(zip(strip_cg_x, strip_na_y, strip_types)):
 # ── NA smooth curve ──
 x_na_smooth, y_na_smooth = smooth_spline(strip_cg_x, strip_na_y)
 ax.plot(x_na_smooth, y_na_smooth, color='#00b4d8', linewidth=2.0,
-        linestyle='-', alpha=0.9, label='Neutral Axis')
+        linestyle='-', alpha=0.9)
 
 # ── Overall CG ──
 ax.scatter([overall_cg_x], [overall_cg_y], color='#ff4d6d', s=200,
@@ -264,8 +275,7 @@ ax.scatter([overall_cg_x], [overall_cg_y], color='#ff4d6d', s=200,
 # ── Legend ──
 legend_elements = [
     Patch(facecolor='#2a9d8f', alpha=0.5,  label='Membrane (Polyimide)'),
-    Patch(facecolor='#e9c46a', alpha=0.8,  label='Leading Edge Spar (Carbon Fibre)'),
-    Patch(facecolor='#e9c46a', alpha=0.8,  label='Inclined Stiffener (Carbon Fibre)'),
+    Patch(facecolor='#e9c46a', alpha=0.8,  label='Spar & Inclined Stiffener (Carbon Fibre)'),
     Line2D([0],[0], color='#e76f51', linewidth=2, linestyle='--', label='CG Line'),
     Line2D([0],[0], color='#00b4d8', linewidth=2, linestyle='-',  label='Neutral Axis'),
     Line2D([0],[0], marker='o', color='w', markerfacecolor='#ff9f1c',
@@ -284,14 +294,14 @@ ax.set_xlim(-0.5, WINGSPAN + 0.5)
 ax.set_ylim(-0.5, CHORD + 1.0)
 ax.set_xlabel('x — Wingspan (mm)', color='white', fontsize=11)
 ax.set_ylabel('y — Chord (mm)', color='white', fontsize=11)
-ax.set_title('Wing Layout with CG Line and Neutral Axis', color='white',
-             fontsize=12, fontweight='bold')
+ax.set_title(f'Wing Layout with CG Line and Neutral Axis (θ = {np.degrees(THETA):.0f}°)',
+             color='white', fontsize=12, fontweight='bold')
 ax.tick_params(colors='white')
 ax.spines[:].set_color('#444')
 ax.legend(handles=legend_elements, loc='upper right', fontsize=8,
           facecolor='#1a1d27', edgecolor='#444', labelcolor='white', ncol=2)
 
-plt.suptitle('Rectangular Wing with Inclined Stiffeners\nCG Line vs Neutral Axis (Y-Direction Bending)',
+plt.suptitle(f'Rectangular Wing with Inclined Stiffeners (θ = {np.degrees(THETA):.0f}°)\nCG Line vs Neutral Axis (Y-Direction Bending)',
              color='white', fontsize=13, fontweight='bold')
 
 plt.tight_layout()
