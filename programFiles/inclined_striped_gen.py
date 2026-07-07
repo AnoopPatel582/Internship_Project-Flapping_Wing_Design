@@ -5,8 +5,8 @@ from matplotlib.patches import Polygon, Patch
 from matplotlib.lines import Line2D
 from scipy.interpolate import make_interp_spline
 
-SPAR_HEIGHT     = 2.0    # mm 
-STIFF_WIDTH     = 2.0   # mm 
+SPAR_HEIGHT     = 1.0    # mm 
+STIFF_WIDTH     = 1.0   # mm 
 
 
 CHORD           = 7.0    # mm (total chord height)
@@ -82,6 +82,8 @@ def calc_region(x_s, x_e, y_b, y_top, region_type, global_x_offset=0.0):
         xl_bot    = x_left(y_b)
         mw_top    = max(0, xl_top - x_s)
         mw_bot    = max(0, xl_bot - x_s)
+        sw_top    = w - mw_top
+        sw_bot    = w - mw_bot
         mem_area  = 0.5 * (mw_top + mw_bot) * h
         stiff_area = w * h - mem_area
 
@@ -90,6 +92,11 @@ def calc_region(x_s, x_e, y_b, y_top, region_type, global_x_offset=0.0):
             stiff_cg_y = y_b + h*(mw_top   + 2*mw_bot) / (3*(mw_top + mw_bot))
         else:
             mem_cg_y = stiff_cg_y = cy_mid
+
+        if (sw_top + sw_bot) > 1e-10:
+            stiff_cg_y = y_b + h*(2*sw_top + sw_bot) / (3*(sw_top + sw_bot))
+        else:
+            stiff_cg_y = cy_mid
 
         mem_avg_w   = mem_area   / h if h > 0 else 0
         stiff_avg_w = stiff_area / h if h > 0 else 0
@@ -108,6 +115,8 @@ def calc_region(x_s, x_e, y_b, y_top, region_type, global_x_offset=0.0):
         xr_bot     = x_right(y_b)
         sw_top     = max(0, min(xr_top, x_e) - x_s)
         sw_bot     = max(0, min(xr_bot, x_e) - x_s)
+        mw_top     = w - sw_top
+        mw_bot     = w - sw_bot
         stiff_area = 0.5 * (sw_top + sw_bot) * h
         mem_area   = w * h - stiff_area
 
@@ -116,6 +125,11 @@ def calc_region(x_s, x_e, y_b, y_top, region_type, global_x_offset=0.0):
             mem_cg_y   = y_b + h*(sw_top + 2*sw_bot)  / (3*(sw_top + sw_bot))
         else:
             stiff_cg_y = mem_cg_y = cy_mid
+
+        if (mw_top + mw_bot) > 1e-10:
+            mem_cg_y   = y_b + h*(2*mw_top + mw_bot) / (3*(mw_top + mw_bot))
+        else:
+            mem_cg_y   = cy_mid
 
         stiff_avg_w = stiff_area / h if h > 0 else 0
         mem_avg_w   = mem_area   / h if h > 0 else 0
@@ -271,7 +285,6 @@ overall_cgy = sum(m*y for m,y in zip(all_masses, all_cg_y)) / total_mass
 print("-" * 55)
 print(f"\n  Total Mass   : {total_mass:.4f} mg")
 print(f"  Overall CG   : x = {overall_cgx:.4f} mm, y = {overall_cgy:.4f} mm")
-print("=" * 75)
 
 
 # SMOOTH SPLINE

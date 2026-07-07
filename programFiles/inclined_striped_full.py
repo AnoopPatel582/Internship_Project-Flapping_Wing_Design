@@ -77,63 +77,67 @@ def calc_region(x_s, x_e, y_b, y_top, region_type, global_x_offset=0.0):
         return mass, cx_mid, cy_mid, EA, EAy
 
     elif region_type == 'mem_tri_left':
-        xl_top = x_left(y_top)
-        xl_bot = x_left(y_b)
-        mem_w_top = max(0, xl_top - x_s)
-        mem_w_bot = max(0, xl_bot - x_s)
-        mem_area  = 0.5 * (mem_w_top + mem_w_bot) * h
+        xl_top    = x_left(y_top)
+        xl_bot    = x_left(y_b)
+        mw_top    = max(0, xl_top - x_s)
+        mw_bot    = max(0, xl_bot - x_s)
+        sw_top    = w - mw_top
+        sw_bot    = w - mw_bot
+        mem_area  = 0.5 * (mw_top + mw_bot) * h
         stiff_area = w * h - mem_area
 
-        if (mem_w_top + mem_w_bot) > 1e-10:
-            mem_cg_y   = y_b + h * (2*mem_w_top + mem_w_bot) / (3*(mem_w_top + mem_w_bot))
-            stiff_cg_y = y_b + h * (mem_w_top + 2*mem_w_bot) / (3*(mem_w_top + mem_w_bot))
+        if (mw_top + mw_bot) > 1e-10:
+            mem_cg_y   = y_b + h*(2*mw_top + mw_bot) / (3*(mw_top + mw_bot))
         else:
             mem_cg_y   = cy_mid
+
+        if (sw_top + sw_bot) > 1e-10:
+            stiff_cg_y = y_b + h*(2*sw_top + sw_bot) / (3*(sw_top + sw_bot))
+        else:
             stiff_cg_y = cy_mid
 
-        mem_avg_w   = mem_area / h if h > 0 else 0
+        mem_avg_w   = mem_area   / h if h > 0 else 0
         stiff_avg_w = stiff_area / h if h > 0 else 0
-        mem_mass    = mem_area * MEM_THICKNESS * MEM_DENSITY
+        mem_mass    = mem_area   * MEM_THICKNESS   * MEM_DENSITY
         stiff_mass  = stiff_area * STIFF_THICKNESS * STIFF_DENSITY
-        mem_EA      = E_MEMBRANE * MEM_THICKNESS * mem_avg_w
-        stiff_EA    = E_CARBON * STIFF_THICKNESS * stiff_avg_w
-        mem_EAy     = mem_EA * mem_cg_y
-        stiff_EAy   = stiff_EA * stiff_cg_y
-
-        total_mass = mem_mass + stiff_mass
-        total_EA   = mem_EA + stiff_EA
-        total_EAy  = mem_EAy + stiff_EAy
-        cg_y = (mem_mass * mem_cg_y + stiff_mass * stiff_cg_y) / total_mass if total_mass > 0 else cy_mid
+        mem_EA      = E_MEMBRANE * MEM_THICKNESS   * mem_avg_w
+        stiff_EA    = E_CARBON   * STIFF_THICKNESS * stiff_avg_w
+        total_mass  = mem_mass  + stiff_mass
+        total_EA    = mem_EA    + stiff_EA
+        total_EAy   = mem_EA*mem_cg_y + stiff_EA*stiff_cg_y
+        cg_y = (mem_mass*mem_cg_y + stiff_mass*stiff_cg_y) / total_mass if total_mass > 0 else cy_mid
         return total_mass, cx_mid, cg_y, total_EA, total_EAy
 
     elif region_type == 'stiff_tri_left':
-        xr_top = x_right(y_top)
-        xr_bot = x_right(y_b)
-        stiff_w_top = max(0, min(xr_top, x_e) - x_s)
-        stiff_w_bot = max(0, min(xr_bot, x_e) - x_s)
-        stiff_area  = 0.5 * (stiff_w_top + stiff_w_bot) * h
-        mem_area    = w * h - stiff_area
+        xr_top     = x_right(y_top)
+        xr_bot     = x_right(y_b)
+        sw_top     = max(0, min(xr_top, x_e) - x_s)
+        sw_bot     = max(0, min(xr_bot, x_e) - x_s)
+        mw_top     = w - sw_top
+        mw_bot     = w - sw_bot
+        stiff_area = 0.5 * (sw_top + sw_bot) * h
+        mem_area   = w * h - stiff_area
 
-        if (stiff_w_top + stiff_w_bot) > 1e-10:
-            stiff_cg_y = y_b + h * (2*stiff_w_top + stiff_w_bot) / (3*(stiff_w_top + stiff_w_bot))
-            mem_cg_y   = y_b + h * (stiff_w_top + 2*stiff_w_bot) / (3*(stiff_w_top + stiff_w_bot))
+        if (sw_top + sw_bot) > 1e-10:
+            stiff_cg_y = y_b + h*(2*sw_top + sw_bot) / (3*(sw_top + sw_bot))
         else:
             stiff_cg_y = cy_mid
+
+        if (mw_top + mw_bot) > 1e-10:
+            mem_cg_y   = y_b + h*(2*mw_top + mw_bot) / (3*(mw_top + mw_bot))
+        else:
             mem_cg_y   = cy_mid
 
         stiff_avg_w = stiff_area / h if h > 0 else 0
-        mem_avg_w   = mem_area / h if h > 0 else 0
+        mem_avg_w   = mem_area   / h if h > 0 else 0
         stiff_mass  = stiff_area * STIFF_THICKNESS * STIFF_DENSITY
-        mem_mass    = mem_area * MEM_THICKNESS * MEM_DENSITY
-        stiff_EA    = E_CARBON * STIFF_THICKNESS * stiff_avg_w
-        mem_EA      = E_MEMBRANE * MEM_THICKNESS * mem_avg_w
-        stiff_EAy   = stiff_EA * stiff_cg_y
-        mem_EAy     = mem_EA * mem_cg_y
-
-        total_mass = mem_mass + stiff_mass
-        total_EA   = mem_EA + stiff_EA
-        total_EAy  = mem_EAy + stiff_EAy
-        cg_y = (mem_mass * mem_cg_y + stiff_mass * stiff_cg_y) / total_mass if total_mass > 0 else cy_mid
+        mem_mass    = mem_area   * MEM_THICKNESS   * MEM_DENSITY
+        stiff_EA    = E_CARBON   * STIFF_THICKNESS * stiff_avg_w
+        mem_EA      = E_MEMBRANE * MEM_THICKNESS   * mem_avg_w
+        total_mass  = mem_mass  + stiff_mass
+        total_EA    = mem_EA    + stiff_EA
+        total_EAy   = mem_EA*mem_cg_y + stiff_EA*stiff_cg_y
+        cg_y = (mem_mass*mem_cg_y + stiff_mass*stiff_cg_y) / total_mass if total_mass > 0 else cy_mid
         return total_mass, cx_mid, cg_y, total_EA, total_EAy
 
     return 0, cx_mid, cy_mid, 0, 0
@@ -141,12 +145,10 @@ def calc_region(x_s, x_e, y_b, y_top, region_type, global_x_offset=0.0):
 # TYPE B SUB-STRIP CALCULATOR
 def calc_type_b_substrip(x_s, x_e, global_x_offset=0.0):
     w = x_e - x_s
-
     yt_xl_xs = y_transition(x_s, 'left')
     yt_xl_xe = y_transition(x_e, 'left')
     yt_xr_xs = y_transition(x_s, 'right')
     yt_xr_xe = y_transition(x_e, 'right')
-
     y_bounds = sorted(set([0.0, MEM_HEIGHT,
                             yt_xl_xs, yt_xl_xe,
                             yt_xr_xs, yt_xr_xe]))
