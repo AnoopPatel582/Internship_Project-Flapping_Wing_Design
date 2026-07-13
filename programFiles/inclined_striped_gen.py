@@ -10,10 +10,10 @@ STIFF_WIDTH     = 1.0   # mm
 
 
 CHORD           = 7.0    # mm (total chord height)
-THETA           = np.radians(35.0)   # inclination angle
+THETA           = np.radians(45.0)   # inclination angle
 TYPE_A_WIDTH    = 2.0    # mm (width of no-stiffener strip)
 NUM_PAIRS       = 3      # number of A+B strip pairs
-NUM_SUBSTRIPS   = 10     # sub-divisions of Type B strip
+NUM_SUBSTRIPS   = 20     # sub-divisions of Type B strip
 
 # Material thicknesses
 SPAR_THICKNESS  = 0.5    # mm
